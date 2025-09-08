@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
-import '../App.css';
 import {
   createCollection,
   localStorageCollectionOptions,
   useLiveQuery,
 } from '@tanstack/react-db';
 import z from 'zod';
+import { AddEvent } from '../components/AddEvent';
+import { EventList } from '../components/EventList';
 
 const eventsSchema = z.object({
   id: z.string(),
@@ -29,8 +30,10 @@ export const Route = createFileRoute('/')({
 
 function App() {
   return (
-    <div className="App">
-      <h1>Event Planner</h1>
+    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-4">
+      <h1 className="mt-8 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-4xl font-bold text-transparent">
+        Event Planner
+      </h1>
       <Events />
     </div>
   );
@@ -43,24 +46,6 @@ function Events() {
       .orderBy(({ event }) => event.createdAt, 'asc')
   );
 
-  const deleteEvent = (id: string) => eventsCollection.delete(id);
-
-  return (
-    <div>
-      <p>Events</p>
-      <AddEvent />
-      <ul>
-        {events.map((event) => (
-          <li>
-            {event.name} <span onClick={() => deleteEvent(event.id)}>🛑</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function AddEvent() {
   const addEvent = (eventName: string) => {
     eventsCollection.insert({
       id: crypto.randomUUID(),
@@ -70,24 +55,12 @@ function AddEvent() {
     });
   };
 
+  const deleteEvent = (id: string) => eventsCollection.delete(id);
+
   return (
-    <div>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          const formData = new FormData(event.currentTarget);
-          const eventName = formData.get('eventName') as string;
-          if (eventName) {
-            addEvent(eventName);
-            event.currentTarget.reset();
-          }
-        }}
-      >
-        <input name="eventName" className="border border-black"></input>
-        <button className="border px-2 border-black" type="submit">
-          Add event
-        </button>
-      </form>
+    <div className="mt-6 w-full max-w-md rounded-xl border border-white/60 bg-white/80 p-6 shadow-xl backdrop-blur-lg">
+      <AddEvent onAdd={addEvent} />
+      <EventList events={events} onDelete={deleteEvent} />
     </div>
   );
 }
