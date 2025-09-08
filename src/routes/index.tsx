@@ -4,8 +4,9 @@ import {
   localStorageCollectionOptions,
   useLiveQuery,
 } from "@tanstack/react-db";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import z from "zod";
+import { enqueue, initQueue, type QueuedEvent } from "../offlineQueue";
 
 const eventsSchema = z.object({
   id: z.string(),
@@ -92,23 +93,47 @@ function Events() {
 }
 
 function AddEvent({ onClose }: { onClose: () => void }) {
-  const addEvent = (eventName: string) => {
+  const processEvent = useCallback(async (event: QueuedEvent) => {
     eventsCollection.insert({
+      ...event,
+      createdAt: new Date(event.createdAt),
+      updatedAt: new Date(event.updatedAt),
+    });
+  }, []);
+
+  useEffect(() => {
+    initQueue(processEvent);
+  }, [processEvent]);
+
+  const addEvent = async (eventName: string) => {
+    const newEvent: QueuedEvent = {
       id: crypto.randomUUID(),
       name: eventName,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const online = typeof navigator === "undefined" ? true : navigator.onLine;
+    if (!online) {
+      enqueue(newEvent);
+      return;
+    }
+
+    try {
+      await processEvent(newEvent);
+    } catch {
+      enqueue(newEvent);
+    }
   };
 
   return (
     <form
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         const eventName = formData.get("eventName") as string;
         if (eventName) {
-          addEvent(eventName);
+          await addEvent(eventName);
           event.currentTarget.reset();
           onClose();
         }
