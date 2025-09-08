@@ -1,11 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import '../App.css';
+import { createFileRoute } from "@tanstack/react-router";
 import {
   createCollection,
   localStorageCollectionOptions,
   useLiveQuery,
-} from '@tanstack/react-db';
-import z from 'zod';
+} from "@tanstack/react-db";
+import { useState } from "react";
+import z from "zod";
 
 const eventsSchema = z.object({
   id: z.string(),
@@ -16,51 +16,82 @@ const eventsSchema = z.object({
 
 const eventsCollection = createCollection(
   localStorageCollectionOptions({
-    id: 'events',
+    id: "events",
     getKey: (event) => event.id,
     schema: eventsSchema,
-    storageKey: 'app-events',
-  })
+    storageKey: "app-events",
+  }),
 );
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: App,
 });
 
 function App() {
+  const [showForm, setShowForm] = useState(false);
+
   return (
-    <div className="App">
-      <h1>Event Planner</h1>
-      <Events />
-    </div>
+    <>
+      <Header onNew={() => setShowForm(true)} />
+      <main className="mx-auto max-w-2xl space-y-6 p-4">
+        {showForm && <AddEvent onClose={() => setShowForm(false)} />}
+        <Events />
+      </main>
+    </>
+  );
+}
+
+function Header({ onNew }: { onNew: () => void }) {
+  return (
+    <header className="bg-white shadow-sm">
+      <div className="mx-auto flex max-w-2xl items-center justify-between p-4">
+        <h1 className="text-2xl font-semibold">Event Planner</h1>
+        <button
+          onClick={onNew}
+          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        >
+          New Task
+        </button>
+      </div>
+    </header>
   );
 }
 
 function Events() {
-  const { data: events } = useLiveQuery((q) =>
+  const { data: events = [] } = useLiveQuery((q) =>
     q
       .from({ event: eventsCollection })
-      .orderBy(({ event }) => event.createdAt, 'asc')
+      .orderBy(({ event }) => event.createdAt, "asc"),
   );
 
   const deleteEvent = (id: string) => eventsCollection.delete(id);
 
+  if (events.length === 0) {
+    return <p className="text-center text-gray-500">No tasks yet</p>;
+  }
+
   return (
-    <div>
-      <p>Events</p>
-      <AddEvent />
-      <ul>
-        {events.map((event) => (
-          <li>
-            {event.name} <span onClick={() => deleteEvent(event.id)}>🛑</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <ul className="space-y-4">
+      {events.map((event) => (
+        <li
+          key={event.id}
+          className="flex items-center justify-between rounded-lg bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+        >
+          <span className="text-lg font-medium">{event.name}</span>
+          <button
+            onClick={() => deleteEvent(event.id)}
+            className="text-sm text-red-600 hover:text-red-700 focus:outline-none"
+            aria-label="Delete"
+          >
+            Delete
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-function AddEvent() {
+function AddEvent({ onClose }: { onClose: () => void }) {
   const addEvent = (eventName: string) => {
     eventsCollection.insert({
       id: crypto.randomUUID(),
@@ -71,23 +102,48 @@ function AddEvent() {
   };
 
   return (
-    <div>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          const formData = new FormData(event.currentTarget);
-          const eventName = formData.get('eventName') as string;
-          if (eventName) {
-            addEvent(eventName);
-            event.currentTarget.reset();
-          }
-        }}
-      >
-        <input name="eventName" className="border border-black"></input>
-        <button className="border px-2 border-black" type="submit">
-          Add event
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const eventName = formData.get("eventName") as string;
+        if (eventName) {
+          addEvent(eventName);
+          event.currentTarget.reset();
+          onClose();
+        }
+      }}
+      className="space-y-4 rounded-lg bg-white p-4 shadow-sm"
+    >
+      <div>
+        <label
+          htmlFor="eventName"
+          className="mb-2 block text-sm font-medium text-gray-700"
+        >
+          Task Name
+        </label>
+        <input
+          id="eventName"
+          name="eventName"
+          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+          required
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        >
+          Save
         </button>
-      </form>
-    </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
   );
 }
