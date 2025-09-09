@@ -6,6 +6,8 @@ import {
 } from "@tanstack/react-db";
 import { useState } from "react";
 import z from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 const eventsSchema = z.object({
   id: z.string(),
@@ -43,15 +45,10 @@ function App() {
 
 function Header({ onNew }: { onNew: () => void }) {
   return (
-    <header className="bg-white shadow-sm">
+    <header className="border-b bg-background">
       <div className="mx-auto flex max-w-2xl items-center justify-between p-4">
         <h1 className="text-2xl font-semibold">Event Planner</h1>
-        <button
-          onClick={onNew}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-        >
-          New Task
-        </button>
+        <Button onClick={onNew}>New Task</Button>
       </div>
     </header>
   );
@@ -67,7 +64,7 @@ function Events() {
   const deleteEvent = (id: string) => eventsCollection.delete(id);
 
   if (events.length === 0) {
-    return <p className="text-center text-gray-500">No tasks yet</p>;
+    return <p className="text-center text-muted-foreground">No tasks yet</p>;
   }
 
   return (
@@ -75,16 +72,16 @@ function Events() {
       {events.map((event) => (
         <li
           key={event.id}
-          className="flex items-center justify-between rounded-lg bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+          className="flex items-center justify-between rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
         >
           <span className="text-lg font-medium">{event.name}</span>
-          <button
+          <Button
             onClick={() => deleteEvent(event.id)}
-            className="text-sm text-red-600 hover:text-red-700 focus:outline-none"
+            className="bg-transparent px-2 text-sm text-destructive hover:bg-destructive/10"
             aria-label="Delete"
           >
             Delete
-          </button>
+          </Button>
         </li>
       ))}
     </ul>
@@ -113,36 +110,23 @@ function AddEvent({ onClose }: { onClose: () => void }) {
           onClose();
         }
       }}
-      className="space-y-4 rounded-lg bg-white p-4 shadow-sm"
+      className="space-y-4 rounded-lg border bg-card p-4 shadow-sm"
     >
       <div>
-        <label
-          htmlFor="eventName"
-          className="mb-2 block text-sm font-medium text-gray-700"
-        >
+        <label htmlFor="eventName" className="mb-2 block text-sm font-medium">
           Task Name
         </label>
-        <input
-          id="eventName"
-          name="eventName"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
-          required
-        />
+        <Input id="eventName" name="eventName" required />
       </div>
       <div className="flex gap-2">
-        <button
-          type="submit"
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-        >
-          Save
-        </button>
-        <button
+        <Button type="submit">Save</Button>
+        <Button
           type="button"
           onClick={onClose}
-          className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          className="bg-transparent text-foreground border border-input hover:bg-muted"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
